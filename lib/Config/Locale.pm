@@ -11,8 +11,8 @@ Config::Locale - Load and merge locale-specific configuration files.
     use Config::Locale;
     
     my $locale = Config::Locale->new(
-        identity => ['db', '1', 'qa'],
-        directory => '/path/to/configs/',
+        identity => \@values,
+        directory => $config_dir,
     );
     
     my $config = $locale->config();
@@ -27,24 +27,23 @@ So, given this setup:
 
     Config::Locale->new(
         identity => ['db', '1', 'qa'],
-        suffix   => '.yml',
     );
 
 The following configuration files will be looked for (listed from least specific to most):
 
-    default.yml
-    all.all.qa.yml
-    all.1.all.yml
-    all.1.qa.yml
-    db.all.all.yml
-    db.all.qa.yml
-    db.1.all.yml
-    db.1.qa.yml
+    default
+    all.all.qa
+    all.1.all
+    all.1.qa
+    db.all.all
+    db.all.qa
+    db.1.all
+    db.1.qa
 
 For each file found the contents will be parsed and then merged together to produce the
 final configuration hash.  The hashes will be merged so that the most specific configuration
 file will take precedence over the least specific files.  So, in the example above,
-"db.1.qa.yml" values will overwrite values from "default.yml".
+"db.1.qa" values will overwrite values from "default".
 
 =cut
 
@@ -156,9 +155,10 @@ sub _build_prefix {
 =head2 suffix
 
 An optional suffix that will be apended to the configuration filenames.
-Typically this will need to be used to specify the filename extension for
-the particular configuration format you are using, such as ".ini", ".yml",
-etc.
+While it may seem like the right place, you probably should not be using
+this to specify the extension of your configuration files.  L<Config::Any>
+automatically tries many various forms of extensions without the need
+to explicitly declare the extension that you are using.
 
 =cut
 
