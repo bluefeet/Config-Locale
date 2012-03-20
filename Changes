@@ -1,5 +1,7 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+
+0.01      2012-03-19
  - First release.
 
