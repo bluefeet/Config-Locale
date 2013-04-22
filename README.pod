@@ -85,6 +85,10 @@ this to specify the extension of your configuration files.  L<Config::Any>
 automatically tries many various forms of extensions without the need
 to explicitly declare the extension that you are using.
 
+=head2 merge_behavior
+
+Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
+
 =head1 ATTRIBUTES
 
 =head2 config

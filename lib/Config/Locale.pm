@@ -49,7 +49,7 @@ file will take precedence over the least specific files.  So, in the example abo
 
 use Config::Any;
 use MooseX::Types::Path::Class;
-use Hash::Merge qw( merge );
+use Hash::Merge;
 use Algorithm::Loops qw( NestedLoops );
 
 =head1 ARGUMENTS
@@ -171,6 +171,21 @@ sub _build_suffix {
     return '';
 }
 
+=head2 merge_behavior
+
+Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
+
+=cut
+
+has merge_behavior => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+sub _build_merge_behavior {
+    return 'LEFT_PRECEDENT';
+}
+
 =head1 ATTRIBUTES
 
 =head2 config
@@ -188,9 +203,11 @@ has config => (
 sub _build_config {
     my ($self) = @_;
 
+    my $merge = Hash::Merge->new( $self->merge_behavior() );
+
     my $config = {};
     foreach my $this_config (@{ $self->configs() }) {
-        $config = merge( $this_config, $config );
+        $config = $merge->merge( $this_config, $config );
     }
 
     return $config;
