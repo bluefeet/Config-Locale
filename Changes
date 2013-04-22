@@ -1,6 +1,8 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+
+0.02      2013-04-21
  - Add algorithm argument to suppor the new PERMUTE algorithm.
  - Add merge_behavior argument.
  - Remove suggestions that one should use suffix for specifying the extension
