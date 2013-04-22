@@ -61,6 +61,9 @@ The wildcard string to use when constructing the configuration filenames.
 Defaults to "all".  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
+Note that this argument is completely ignored if you are using the C<PERMUTE>
+algorithm.
+
 =head2 default
 
 The name of the configuration file that contains the default configuration.
@@ -85,6 +88,19 @@ this to specify the extension of your configuration files.  L<Config::Any>
 automatically tries many various forms of extensions without the need
 to explicitly declare the extension that you are using.
 
+=head2 algorithm
+
+Which algorithm used to determine, based on the identity, what configuration
+files to consider for inclusion.
+
+The default, C<NESTED>, keeps the order of the identity.  This is most useful
+for identities that are derived from the name of a resource as resource names
+(such as hostnames of machines) typically have a defined structure.
+
+The C<PERMUTE> algorithm will shift the identity values around in all possible
+permutations.  This is most useful when the identity contains attributes of a
+resource.
+
 =head2 merge_behavior
 
 Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
@@ -106,8 +122,8 @@ Contains an array of L<Path::Class::File> objects for each value in L</combinati
 
 =head2 combinations
 
-Holds an array of arrays containing all possible premutations of the
-identity.
+Holds an array of arrays containing all possible permutations of the
+identity, per the specified L</algorithm>.
 
 =head1 AUTHOR
 

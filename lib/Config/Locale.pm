@@ -47,10 +47,11 @@ file will take precedence over the least specific files.  So, in the example abo
 
 =cut
 
+use Moose::Util::TypeConstraints;
 use Config::Any;
 use MooseX::Types::Path::Class;
 use Hash::Merge;
-use Algorithm::Loops qw( NestedLoops );
+use Algorithm::Loops qw( NestedLoops NextPermute );
 
 =head1 ARGUMENTS
 
@@ -91,6 +92,9 @@ sub _build_directory {
 The wildcard string to use when constructing the configuration filenames.
 Defaults to "all".  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
+
+Note that this argument is completely ignored if you are using the C<PERMUTE>
+algorithm.
 
 =cut
 
@@ -169,6 +173,32 @@ has suffix => (
 );
 sub _build_suffix {
     return '';
+}
+
+=head2 algorithm
+
+Which algorithm used to determine, based on the identity, what configuration
+files to consider for inclusion.
+
+The default, C<NESTED>, keeps the order of the identity.  This is most useful
+for identities that are derived from the name of a resource as resource names
+(such as hostnames of machines) typically have a defined structure.
+
+The C<PERMUTE> algorithm will shift the identity values around in all possible
+permutations.  This is most useful when the identity contains attributes of a
+resource.
+
+=cut
+
+enum 'Config::Locale::Algorithm', ['NESTED', 'PERMUTE'];
+
+has algorithm => (
+    is         => 'ro',
+    isa        => 'Config::Locale::Algorithm',
+    lazy_build => 1,
+);
+sub _build_algorithm {
+    return 'NESTED';
 }
 
 =head2 merge_behavior
@@ -286,8 +316,8 @@ sub _build_stems {
 
 =head2 combinations
 
-Holds an array of arrays containing all possible premutations of the
-identity.
+Holds an array of arrays containing all possible permutations of the
+identity, per the specified L</algorithm>.
 
 =cut
 
@@ -305,12 +335,35 @@ sub _build_combinations {
         @{ $self->identity() }
     ];
 
-    return [
+    my $combos = [
         NestedLoops(
             $options,
             sub { [ @_ ] },
         )
     ];
+
+    if ($self->algorithm() eq 'PERMUTE') {
+        $combos = [
+            # Smaller arrays should be sorted before larger ones.
+            sort { @$a <=> @$b }
+            map {[
+                sort # Must sort before calling NextPermute.
+                grep { defined $_ } # The undefs would cause diplicate permutations.
+                @$_
+            ]}
+            @$combos
+        ];
+
+        my @pcombos;
+        foreach my $combo (sort { @$a <=> @$b } @$combos) {
+            do { push @pcombos, [ @$combo ] }
+            while (NextPermute( @$combo ));
+        }
+
+        $combos = \@pcombos;
+    }
+
+    return $combos;
 }
 
 __PACKAGE__->meta->make_immutable;
