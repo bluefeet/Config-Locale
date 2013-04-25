@@ -1,6 +1,8 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+
+0.03      2013-04-24
  - Optimize the PERMUTE algorithm so that its not actually generating all the
    possible permutations, which was VERY slow.
  - Replace the default argument with default_stem and override_stem.  This
