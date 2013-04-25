@@ -1,9 +1,13 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+ - Optimize the PERMUTE algorithm so that its not actually generating all the
+   possible permutations, which was VERY slow.
+ - Replace the default argument with default_stem and override_stem.  This
+   provides much more flexibility.
 
 0.02      2013-04-21
- - Add algorithm argument to suppor the new PERMUTE algorithm.
+ - Add algorithm argument to support the new PERMUTE algorithm.
  - Add merge_behavior argument.
  - Remove suggestions that one should use suffix for specifying the extension
    of the configuration filenames.

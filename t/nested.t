@@ -7,23 +7,28 @@ use Path::Class qw( file );
 
 BEGIN{ use_ok('Config::Locale') }
 
-my $config = Config::Locale->new( identity => [qw( this that those )] );
+my $config_dir = file( $0 )->dir->subdir('nested');
+
+my $config = Config::Locale->new(
+    directory => $config_dir,
+    identity  => [qw( this that those )],
+    algorithm => 'NESTED',
+);
+
 is_deeply(
     $config->combinations(),
     [
-        [undef, undef, undef],
-        [undef, undef, 'those'],
-        [undef, 'that', undef],
-        [undef, 'that', 'those'],
-        ['this', undef, undef],
-        ['this', undef, 'those'],
-        ['this', 'that', undef],
+        ['all',  'all',  'all'],
+        ['all',  'all',  'those'],
+        ['all',  'that', 'all'],
+        ['all',  'that', 'those'],
+        ['this', 'all',  'all'],
+        ['this', 'all',  'those'],
+        ['this', 'that', 'all'],
         ['this', 'that', 'those'],
     ],
     'correct combinations',
 );
-
-my $config_dir = file( $0 )->dir->subdir('config');
 
 my @test_cases = (
     [ [qw( foo foo foo )] => { this=>'that', what=>'yes', bar=>'no' } ],
@@ -34,8 +39,9 @@ foreach my $case (@test_cases) {
     my ($identity, $expected) = @$case;
 
     my $config = Config::Locale->new(
-        directory => $config_dir,
-        identity  => $identity,
+        directory       => $config_dir,
+        identity        => $identity,
+        algorithm       => 'NESTED',
     )->config();
 
     is_deeply(

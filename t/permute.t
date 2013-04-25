@@ -3,35 +3,28 @@ use strict;
 use warnings;
 
 use Test::More;
+use Path::Class qw( file );
 
 BEGIN{ use_ok('Config::Locale') }
 
-my $config = Config::Locale->new( identity => [qw( c a b )], algorithm => 'PERMUTE' );
+my $config_dir = file( $0 )->dir->subdir('permute');
 
-# The order of these values can be depended on as the algorithm used to find the
-# permutations works in a known order and the initial combinations passed to it
-# are done so in a sorted order.
-is_deeply(
-    $config->combinations(),
-    [
-        [],
-        [qw( b )],
-        [qw( a )],
-        [qw( c )],
-        [qw( a b )],
-        [qw( b a )],
-        [qw( b c )],
-        [qw( c b )],
-        [qw( a c )],
-        [qw( c a )],
-        [qw( a b c )],
-        [qw( a c b )],
-        [qw( b a c )],
-        [qw( b c a )],
-        [qw( c a b )],
-        [qw( c b a )],
-    ],
-    'permute has correct combinations',
+my @test_cases = (
+    [ [qw( foo )]     => { iam => { foo=>1 } } ],
+    [ [qw( foo bar )] => { iam => { foo=>1, bar=>1, 'foo.bar'=>1 } } ],
+    [ [qw( bar )]     => { iam => { bar=>1 } } ],
 );
+
+foreach my $case (@test_cases) {
+    my ($identity, $expected) = @$case;
+
+    my $config = Config::Locale->new(
+        directory => $config_dir,
+        identity  => $identity,
+        algorithm => 'PERMUTE',
+    )->config();
+
+    is_deeply( $config, $expected, join(', ', @$identity) );
+}
 
 done_testing;

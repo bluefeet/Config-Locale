@@ -39,11 +39,12 @@ The following configuration files will be looked for (listed from least specific
     db.all.qa
     db.1.all
     db.1.qa
+    override
 
 For each file found the contents will be parsed and then merged together to produce the
 final configuration hash.  The hashes will be merged so that the most specific configuration
 file will take precedence over the least specific files.  So, in the example above,
-"db.1.qa" values will overwrite values from "default".
+"db.1.qa" values will overwrite values from "db.1.all".
 
 =cut
 
@@ -51,7 +52,7 @@ use Moose::Util::TypeConstraints;
 use Config::Any;
 use MooseX::Types::Path::Class;
 use Hash::Merge;
-use Algorithm::Loops qw( NestedLoops NextPermute );
+use Algorithm::Loops qw( NestedLoops );
 
 =head1 ARGUMENTS
 
@@ -93,36 +94,57 @@ The wildcard string to use when constructing the configuration filenames.
 Defaults to "all".  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
-Note that this argument is completely ignored if you are using the C<PERMUTE>
-algorithm.
-
 =cut
 
 has wildcard => (
     is         => 'ro',
-    isa        => 'Maybe[Str]',
+    isa        => 'Str|Undef',
     lazy_build => 1,
 );
 sub _build_wildcard {
     return 'all';
 }
 
-=head2 default
+=head2 default_stem
 
-The name of the configuration file that contains the default configuration.
-Defaults to "default".  This may be explcitly set to undef which will cause
-the default configuration file to look just like all the other configuration
-files, just using the L</wildcard> for all of the identity values.
+A stem used to load default configuration values before any other
+configuration files are loaded.
+
+Defaults to "default".  A relative path may be specified which will be assumed
+to be relative to L</directory>.  If an absolute path is used then no change
+will be made.  Either a scalar or a L<Path::Class::File> object may be used.
+
+Note that L</prefix> and L</suffix> are not applied to this stem.
 
 =cut
 
-has default => (
+has default_stem => (
     is         => 'ro',
-    isa        => 'Maybe[Str]',
+    isa        => 'Path::Class::File|Undef',
+    coerce     => 1,
     lazy_build => 1,
 );
-sub _build_default {
+sub _build_default_stem {
     return 'default';
+}
+
+=head2 override_stem
+
+This works just like L</default_stem> except that the configuration values
+from this stem will override those from all other configuration files.
+
+Defaults to "override".
+
+=cut
+
+has override_stem => (
+    is         => 'ro',
+    isa        => 'Path::Class::File|Undef',
+    coerce     => 1,
+    lazy_build => 1,
+);
+sub _build_override_stem {
+    return 'override';
 }
 
 =head2 separator
@@ -132,9 +154,14 @@ configuration filenames.  Defaults to ".".
 
 =cut
 
+subtype 'Config::Locale::Types::Separator',
+    as 'Str',
+    where { length($_) == 1 },
+    message { 'The separator must be a single character' };
+
 has separator => (
     is => 'ro',
-    isa => 'Str',
+    isa => 'Config::Locale::Types::Separator',
     lazy_build => 1,
 );
 sub _build_separator {
@@ -184,17 +211,19 @@ The default, C<NESTED>, keeps the order of the identity.  This is most useful
 for identities that are derived from the name of a resource as resource names
 (such as hostnames of machines) typically have a defined structure.
 
-The C<PERMUTE> algorithm will shift the identity values around in all possible
-permutations.  This is most useful when the identity contains attributes of a
-resource.
+C<PERMUTE> finds configuration files that includes any number of the identity
+values in any order.  Due to the high CPU demands of permutation algorithms this does
+not actually generate every possible permutation - instead it finds all files that
+match the directory/prefix/separator/suffix and filters those for values in the
+identity and is very fast.
 
 =cut
 
-enum 'Config::Locale::Algorithm', ['NESTED', 'PERMUTE'];
+enum 'Config::Locale::Types::Algorithm', ['NESTED', 'PERMUTE'];
 
 has algorithm => (
     is         => 'ro',
-    isa        => 'Config::Locale::Algorithm',
+    isa        => 'Config::Locale::Types::Algorithm',
     lazy_build => 1,
 );
 sub _build_algorithm {
@@ -287,31 +316,22 @@ sub _build_stems {
 
     my $directory = $self->directory();
     my $separator = $self->separator();
-    my $wildcard  = $self->wildcard();
-    my $default   = $self->default();
     my $prefix    = $self->prefix();
     my $suffix    = $self->suffix();
 
     my @combinations = @{ $self->combinations() };
-    if ($default) {
-        shift @combinations;
-        unshift @combinations, [ $default ];
-    }
 
     my @stems;
     foreach my $combination (@combinations) {
         my @parts = @$combination;
-        if ($wildcard) {
-            @parts = map { defined($_) ? $_ : $wildcard } @parts;
-        }
-        else {
-            @parts = grep { defined($_) } @parts;
-        }
-
         push @stems, $directory->file( $prefix . join($separator, @parts) . $suffix );
     }
 
-    return \@stems;
+    return [
+        $self->default_stem->absolute( $directory ),
+        @stems,
+        $self->override_stem->absolute( $directory ),
+    ];
 }
 
 =head2 combinations
@@ -330,40 +350,78 @@ has combinations => (
 sub _build_combinations {
     my ($self) = @_;
 
+    if ($self->algorithm() eq 'NESTED') {
+        return $self->_nested_combinations();
+    }
+    elsif ($self->algorithm() eq 'PERMUTE') {
+        return $self->_permute_combinations();
+    }
+
+    die 'Unknown algorithm'; # Shouldn't ever get to this.
+}
+
+sub _nested_combinations {
+    my ($self) = @_;
+
+    my $wildcard = $self->wildcard();
+
     my $options = [
-        map { [undef, $_] }
+        map { [$wildcard, $_] }
         @{ $self->identity() }
     ];
 
-    my $combos = [
+    return [
+        # If the wildcard is undef then we will have one empty array that needs removal.
+        grep { @$_ > 0 }
+
+        # If the wildcard is undef then we need to strip out the undefs.
+        map { [ grep { defined($_) } @$_ ] }
+
+        # Run arbitrarily deep foreach loop.
         NestedLoops(
             $options,
             sub { [ @_ ] },
         )
     ];
+}
 
-    if ($self->algorithm() eq 'PERMUTE') {
-        $combos = [
-            # Smaller arrays should be sorted before larger ones.
-            sort { @$a <=> @$b }
-            map {[
-                sort # Must sort before calling NextPermute.
-                grep { defined $_ } # The undefs would cause diplicate permutations.
-                @$_
-            ]}
-            @$combos
-        ];
+sub _permute_combinations {
+    my ($self) = @_;
 
-        my @pcombos;
-        foreach my $combo (sort { @$a <=> @$b } @$combos) {
-            do { push @pcombos, [ @$combo ] }
-            while (NextPermute( @$combo ));
+    my $wildcard  = $self->wildcard();
+    my $prefix    = $self->prefix();
+    my $suffix    = $self->suffix();
+    my $separator = $self->separator();
+
+    my $id_lookup = {
+        map { $_ => 1 }
+        @{ $self->identity() },
+    };
+
+    $id_lookup->{$wildcard} = 1 if defined $wildcard;
+
+    my @combos;
+    foreach my $file ($self->directory->children()) {
+        next if $file->is_dir();
+
+        if ($file->basename() =~ m{^$prefix(.*)$suffix\.}) {
+            my @parts = split(/[$separator]/, $1);
+            my $matches = 1;
+            foreach my $part (@parts) {
+                next if $id_lookup->{$part};
+                $matches = 0;
+                last;
+            }
+            if ($matches) { push @combos, \@parts }
         }
-
-        $combos = \@pcombos;
     }
 
-    return $combos;
+    return [
+        sort { @$a <=> @$b }
+        @combos
+    ];
+
+    return \@combos;
 }
 
 __PACKAGE__->meta->make_immutable;

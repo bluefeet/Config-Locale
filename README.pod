@@ -35,11 +35,12 @@ The following configuration files will be looked for (listed from least specific
     db.all.qa
     db.1.all
     db.1.qa
+    override
 
 For each file found the contents will be parsed and then merged together to produce the
 final configuration hash.  The hashes will be merged so that the most specific configuration
 file will take precedence over the least specific files.  So, in the example above,
-"db.1.qa" values will overwrite values from "default".
+"db.1.qa" values will overwrite values from "db.1.all".
 
 =head1 ARGUMENTS
 
@@ -61,15 +62,23 @@ The wildcard string to use when constructing the configuration filenames.
 Defaults to "all".  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
-Note that this argument is completely ignored if you are using the C<PERMUTE>
-algorithm.
+=head2 default_stem
 
-=head2 default
+A stem used to load default configuration values before any other
+configuration files are loaded.
 
-The name of the configuration file that contains the default configuration.
-Defaults to "default".  This may be explcitly set to undef which will cause
-the default configuration file to look just like all the other configuration
-files, just using the L</wildcard> for all of the identity values.
+Defaults to "default".  A relative path may be specified which will be assumed
+to be relative to L</directory>.  If an absolute path is used then no change
+will be made.  Either a scalar or a L<Path::Class::File> object may be used.
+
+Note that L</prefix> and L</suffix> are not applied to this stem.
+
+=head2 override_stem
+
+This works just like L</default_stem> except that the configuration values
+from this stem will override those from all other configuration files.
+
+Defaults to "override".
 
 =head2 separator
 
@@ -97,9 +106,11 @@ The default, C<NESTED>, keeps the order of the identity.  This is most useful
 for identities that are derived from the name of a resource as resource names
 (such as hostnames of machines) typically have a defined structure.
 
-The C<PERMUTE> algorithm will shift the identity values around in all possible
-permutations.  This is most useful when the identity contains attributes of a
-resource.
+C<PERMUTE> finds configuration files that includes any number of the identity
+values in any order.  Due to the high CPU demands of permutation algorithms this does
+not actually generate every possible permutation - instead it finds all files that
+match the directory/prefix/separator/suffix and filters those for values in the
+identity and is very fast.
 
 =head2 merge_behavior
 
