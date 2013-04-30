@@ -34,7 +34,7 @@ foreach my $type (qw( default override )) {
 
         is(
             $actual . '',
-            $expected . '',
+            file($expected) . '',
             $type . ' stem resolved to ' . $expected,
         );
     }

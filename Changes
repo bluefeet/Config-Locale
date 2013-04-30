@@ -1,6 +1,7 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+ - Fix tests for Windows.
 
 0.03      2013-04-24
  - Optimize the PERMUTE algorithm so that its not actually generating all the
