@@ -1,6 +1,8 @@
 Revision history for Perl extension Config::Locale.
 
 {{$NEXT}}
+
+0.04      2013-07-14
  - Fix tests for Windows.
  - Add require_defaults argument.
 
