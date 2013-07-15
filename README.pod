@@ -73,6 +73,11 @@ will be made.  Either a scalar or a L<Path::Class::File> object may be used.
 
 Note that L</prefix> and L</suffix> are not applied to this stem.
 
+=head2 require_defaults
+
+If true, then any key that appears in a non-default stem must exist in the
+default stem or an error will be thrown.  Defaults to false.
+
 =head2 override_stem
 
 This works just like L</default_stem> except that the configuration values
@@ -120,12 +125,29 @@ Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
 
 =head2 config
 
-Contains the final configuration hash as merged from the hashes in L</configs>.
+Contains the final configuration hash as merged from the hashes in L</default_config>,
+L</stem_configs>, and L</override_configs>.
 
-=head2 configs
+=head2 default_config
 
-Contains an array of hashrefs, one hashref for each file in L</stems> that
-exists.
+A merged hash of all the hashrefs in L</default_configs>.  This is computed
+separately, but then merged with, L</config> so that the L</stem_configs> and
+L</override_configs> can be checked for valid keys if L</require_defaults>
+is set.
+
+=head2 default_configs
+
+An array of hashrefs, each hashref containing a single key/value pair as returned
+by L<Config::Any>->load_stems() where the key is the filename found, and the value
+is the parsed configuration hash for any L</default_stem> configuration.
+
+=head2 stem_configs
+
+Like L</default_configs>, but for any L</stems> configurations.
+
+=head2 override_configs
+
+Like L</default_configs>, but for any L</override_stem> configurations.
 
 =head2 stems
 
@@ -135,6 +157,11 @@ Contains an array of L<Path::Class::File> objects for each value in L</combinati
 
 Holds an array of arrays containing all possible permutations of the
 identity, per the specified L</algorithm>.
+
+=head2 merge_object
+
+The L<Hash::Merge> object that will be used to merge the configuration
+hashes.
 
 =head1 AUTHOR
 

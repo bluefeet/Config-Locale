@@ -53,6 +53,17 @@ use Config::Any;
 use MooseX::Types::Path::Class;
 use Hash::Merge;
 use Algorithm::Loops qw( NestedLoops );
+use Carp qw( croak );
+
+sub BUILD {
+    my ($self) = @_;
+
+    my $directory = $self->directory();
+    $self->_set_override_stem( $self->override_stem->absolute( $directory ) );
+    $self->_set_default_stem( $self->default_stem->absolute( $directory ) );
+
+    return;
+}
 
 =head1 ARGUMENTS
 
@@ -120,12 +131,29 @@ Note that L</prefix> and L</suffix> are not applied to this stem.
 
 has default_stem => (
     is         => 'ro',
-    isa        => 'Path::Class::File|Undef',
+    isa        => 'Path::Class::File',
     coerce     => 1,
     lazy_build => 1,
+    writer     => '_set_default_stem',
 );
 sub _build_default_stem {
     return 'default';
+}
+
+=head2 require_defaults
+
+If true, then any key that appears in a non-default stem must exist in the
+default stem or an error will be thrown.  Defaults to false.
+
+=cut
+
+has require_defaults => (
+    is         => 'ro',
+    isa        => 'Bool',
+    lazy_build => 1,
+);
+sub _build_require_defaults {
+    return 0;
 }
 
 =head2 override_stem
@@ -139,9 +167,10 @@ Defaults to "override".
 
 has override_stem => (
     is         => 'ro',
-    isa        => 'Path::Class::File|Undef',
+    isa        => 'Path::Class::File',
     coerce     => 1,
     lazy_build => 1,
+    writer     => '_set_override_stem',
 );
 sub _build_override_stem {
     return 'override';
@@ -249,7 +278,8 @@ sub _build_merge_behavior {
 
 =head2 config
 
-Contains the final configuration hash as merged from the hashes in L</configs>.
+Contains the final configuration hash as merged from the hashes in L</default_config>,
+L</stem_configs>, and L</override_configs>.
 
 =cut
 
@@ -261,42 +291,123 @@ has config => (
 );
 sub _build_config {
     my ($self) = @_;
-
-    my $merge = Hash::Merge->new( $self->merge_behavior() );
-
-    my $config = {};
-    foreach my $this_config (@{ $self->configs() }) {
-        $config = $merge->merge( $this_config, $config );
-    }
-
-    return $config;
+    return $self->_merge_configs([
+        { default => $self->default_config() },
+        @{ $self->stem_configs() },
+        @{ $self->override_configs() },
+    ]);
 }
 
-=head2 configs
+=head2 default_config
 
-Contains an array of hashrefs, one hashref for each file in L</stems> that
-exists.
+A merged hash of all the hashrefs in L</default_configs>.  This is computed
+separately, but then merged with, L</config> so that the L</stem_configs> and
+L</override_configs> can be checked for valid keys if L</require_defaults>
+is set.
 
 =cut
 
-has configs => (
+has default_config => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+    init_arg   => undef,
+);
+sub _build_default_config {
+    my ($self) = @_;
+    return $self->_merge_configs( $self->default_configs() );
+}
+
+=head2 default_configs
+
+An array of hashrefs, each hashref containing a single key/value pair as returned
+by L<Config::Any>->load_stems() where the key is the filename found, and the value
+is the parsed configuration hash for any L</default_stem> configuration.
+
+=cut
+
+has default_configs => (
     is         => 'ro',
     isa        => 'ArrayRef[HashRef]',
     lazy_build => 1,
     init_arg   => undef,
 );
-sub _build_configs {
+sub _build_default_configs {
     my ($self) = @_;
+    return $self->_load_configs( [$self->default_stem()] );
+}
+
+=head2 stem_configs
+
+Like L</default_configs>, but for any L</stems> configurations.
+
+=cut
+
+has stem_configs => (
+    is         => 'ro',
+    isa        => 'ArrayRef[HashRef]',
+    lazy_build => 1,
+    init_arg   => undef,
+);
+sub _build_stem_configs {
+    my ($self) = @_;
+    return $self->_load_configs( $self->stems(), $self->default_config() );
+}
+
+=head2 override_configs
+
+Like L</default_configs>, but for any L</override_stem> configurations.
+
+=cut
+
+has override_configs => (
+    is         => 'ro',
+    isa        => 'ArrayRef[HashRef]',
+    lazy_build => 1,
+    init_arg   => undef,
+);
+sub _build_override_configs {
+    my ($self) = @_;
+    return $self->_load_configs( [$self->override_stem()], $self->default_config() );
+}
+
+sub _merge_configs {
+    my ($self, $configs) = @_;
+
+    my $merge = $self->merge_object();
+
+    my $config = {};
+    foreach my $hash (@$configs) {
+        foreach my $file (keys %$hash) {
+            my $this_config = $hash->{$file};
+            $config = $merge->merge( $this_config, $config );
+        }
+    }
+
+    return $config;
+}
+
+sub _load_configs {
+    my ($self, $stems, $defaults) = @_;
 
     my $configs = Config::Any->load_stems({
-        stems           => $self->stems(),
-        use_ext         => 1,
+        stems   => $stems,
+        use_ext => 1,
     });
 
-    return [
-        map { values %$_ }
-        @$configs
-    ];
+    if ($defaults and $self->require_defaults()) {
+        foreach my $hash (@$configs) {
+            foreach my $file (keys %$hash) {
+                my $config = $hash->{$file};
+                foreach my $key (keys %$config) {
+                    next if exists $defaults->{$key};
+                    croak "The $key key is defined in $file but does not have a default set";
+                }
+            }
+        }
+    }
+
+    return $configs;
 }
 
 =head2 stems
@@ -327,11 +438,7 @@ sub _build_stems {
         push @stems, $directory->file( $prefix . join($separator, @parts) . $suffix );
     }
 
-    return [
-        $self->default_stem->absolute( $directory ),
-        @stems,
-        $self->override_stem->absolute( $directory ),
-    ];
+    return \@stems;
 }
 
 =head2 combinations
@@ -422,6 +529,24 @@ sub _permute_combinations {
     ];
 
     return \@combos;
+}
+
+=head2 merge_object
+
+The L<Hash::Merge> object that will be used to merge the configuration
+hashes.
+
+=cut
+
+has merge_object => (
+    is         => 'ro',
+    isa        => 'Hash::Merge',
+    lazy_build => 1,
+    init_arg   => undef,
+);
+sub _build_merge_object {
+    my ($self) = @_;
+    return Hash::Merge->new( $self->merge_behavior() );
 }
 
 __PACKAGE__->meta->make_immutable;
