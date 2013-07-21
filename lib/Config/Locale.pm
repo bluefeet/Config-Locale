@@ -1,6 +1,6 @@
 package Config::Locale;
-use Moose;
-use namespace::autoclean;
+use strict;
+use warnings;
 
 =head1 NAME
 
@@ -48,21 +48,61 @@ file will take precedence over the least specific files.  So, in the example abo
 
 =cut
 
-use Moose::Util::TypeConstraints;
 use Config::Any;
-use MooseX::Types::Path::Class;
 use Hash::Merge;
 use Algorithm::Loops qw( NestedLoops );
 use Carp qw( croak );
+use Scalar::Util qw( blessed );
+use Path::Class qw( dir file );
+use List::MoreUtils qw( any );
 
-sub BUILD {
-    my ($self) = @_;
+sub new {
+    my $class = shift;
+    croak __PACKAGE__ . '->new() cannot be called on an instance' if blessed $class;
 
-    my $directory = $self->directory();
-    $self->_set_override_stem( $self->override_stem->absolute( $directory ) );
-    $self->_set_default_stem( $self->default_stem->absolute( $directory ) );
+    my $args = { @_ };
 
-    return;
+    croak 'The identity argument is required' if !$args->{identity};
+    croak 'The identity argument must be an array ref' if ref($args->{identity}) ne 'ARRAY';
+
+    $args->{directory} ||= '.';
+    $args->{directory} = dir( $args->{directory} ) if !blessed $args->{directory};
+    croak 'The directory argument must be a Path::Class::Dir object' if ref($args->{directory}) ne 'Path::Class::Dir';
+
+    $args->{wildcard} = 'all' if !exists $args->{wildcard};
+    croak 'The wildcard argument must be a scalar' if ref $args->{wildcard};
+
+    $args->{default_stem} ||= 'default';
+    $args->{default_stem} = file( $args->{default_stem} ) if !blessed $args->{default_stem};
+    croak 'The default_stem argument must be a Path::Class::File object' if ref($args->{default_stem}) ne 'Path::Class::File';
+    $args->{default_stem} = $args->{default_stem}->absolute( $args->{directory} );
+
+    $args->{require_defaults} = 0 if !$args->{require_defaults};
+    croak 'The require_defaults argument must be a scalar' if ref $args->{require_defaults};
+
+    $args->{override_stem} ||= 'override';
+    $args->{override_stem} = file( $args->{override_stem} ) if !blessed $args->{override_stem};
+    croak 'The override_stem argument must be a Path::Class::File object' if ref($args->{override_stem}) ne 'Path::Class::File';
+    $args->{override_stem} = $args->{override_stem}->absolute( $args->{directory} );
+
+    $args->{separator} ||= '.';
+    croak 'The separator argument must be a scalar' if ref $args->{separator};
+    croak 'The separator argument must be a single character' if length($args->{separator}) != 1;
+
+    $args->{prefix} ||= '';
+    croak 'The prefix argument must be a scalar' if ref $args->{prefix};
+
+    $args->{suffix} ||= '';
+    croak 'The suffix argument must be a scalar' if ref $args->{suffix};
+
+    $args->{algorithm} ||= 'NESTED';
+    croak 'The algorithm argument must be a scalar' if ref $args->{algorithm};
+    croak 'The algorithm argument must be NESTED or PERMUTE' if !any { $args->{algorithm} eq $_ } qw( NESTED PERMUTE );
+
+    $args->{merge_behavior} ||= 'LEFT_PRECEDENT';
+    croak 'The merge_behavior argument must be a scalar' if ref $args->{merge_behavior};
+
+    return bless( $args, $class );
 }
 
 =head1 ARGUMENTS
@@ -76,11 +116,7 @@ list of values.
 
 =cut
 
-has identity => (
-    is       => 'ro',
-    isa      => 'ArrayRef[Str]',
-    required => 1,
-);
+sub identity { $_[0]->{identity} }
 
 =head2 directory
 
@@ -89,15 +125,7 @@ directory.
 
 =cut
 
-has directory => (
-    is         => 'ro',
-    isa        => 'Path::Class::Dir',
-    coerce     => 1,
-    lazy_build => 1,
-);
-sub _build_directory {
-    return '.';
-}
+sub directory { $_[0]->{directory} }
 
 =head2 wildcard
 
@@ -107,14 +135,7 @@ the wildcard string to not be added to the filenames at all.
 
 =cut
 
-has wildcard => (
-    is         => 'ro',
-    isa        => 'Str|Undef',
-    lazy_build => 1,
-);
-sub _build_wildcard {
-    return 'all';
-}
+sub wildcard { return $_[0]->{wildcard} }
 
 =head2 default_stem
 
@@ -129,16 +150,7 @@ Note that L</prefix> and L</suffix> are not applied to this stem.
 
 =cut
 
-has default_stem => (
-    is         => 'ro',
-    isa        => 'Path::Class::File',
-    coerce     => 1,
-    lazy_build => 1,
-    writer     => '_set_default_stem',
-);
-sub _build_default_stem {
-    return 'default';
-}
+sub default_stem { $_[0]->{default_stem} }
 
 =head2 require_defaults
 
@@ -147,14 +159,7 @@ default stem or an error will be thrown.  Defaults to false.
 
 =cut
 
-has require_defaults => (
-    is         => 'ro',
-    isa        => 'Bool',
-    lazy_build => 1,
-);
-sub _build_require_defaults {
-    return 0;
-}
+sub require_defaults { $_[0]->{require_defaults} }
 
 =head2 override_stem
 
@@ -165,16 +170,7 @@ Defaults to "override".
 
 =cut
 
-has override_stem => (
-    is         => 'ro',
-    isa        => 'Path::Class::File',
-    coerce     => 1,
-    lazy_build => 1,
-    writer     => '_set_override_stem',
-);
-sub _build_override_stem {
-    return 'override';
-}
+sub override_stem { $_[0]->{override_stem} }
 
 =head2 separator
 
@@ -183,19 +179,7 @@ configuration filenames.  Defaults to ".".
 
 =cut
 
-subtype 'Config::Locale::Types::Separator',
-    as 'Str',
-    where { length($_) == 1 },
-    message { 'The separator must be a single character' };
-
-has separator => (
-    is => 'ro',
-    isa => 'Config::Locale::Types::Separator',
-    lazy_build => 1,
-);
-sub _build_separator {
-    return '.';
-}
+sub separator { $_[0]->{separator} }
 
 =head2 prefix
 
@@ -203,14 +187,7 @@ An optional prefix that will be prepended to the configuration filenames.
 
 =cut
 
-has prefix => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-sub _build_prefix {
-    return '';
-}
+sub prefix { $_[0]->{prefix} }
 
 =head2 suffix
 
@@ -222,14 +199,7 @@ to explicitly declare the extension that you are using.
 
 =cut
 
-has suffix => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-sub _build_suffix {
-    return '';
-}
+sub suffix { $_[0]->{suffix} }
 
 =head2 algorithm
 
@@ -248,16 +218,7 @@ identity and is very fast.
 
 =cut
 
-enum 'Config::Locale::Types::Algorithm', ['NESTED', 'PERMUTE'];
-
-has algorithm => (
-    is         => 'ro',
-    isa        => 'Config::Locale::Types::Algorithm',
-    lazy_build => 1,
-);
-sub _build_algorithm {
-    return 'NESTED';
-}
+sub algorithm { $_[0]->{algorithm} }
 
 =head2 merge_behavior
 
@@ -265,14 +226,7 @@ Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
 
 =cut
 
-has merge_behavior => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-sub _build_merge_behavior {
-    return 'LEFT_PRECEDENT';
-}
+sub merge_behavior { $_[0]->{merge_behavior} }
 
 =head1 ATTRIBUTES
 
@@ -283,12 +237,11 @@ L</stem_configs>, and L</override_configs>.
 
 =cut
 
-has config => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub config {
+    my ($self) = @_;
+    $self->{config} ||= $self->_build_config();
+    return $self->{config};
+}
 sub _build_config {
     my ($self) = @_;
     return $self->_merge_configs([
@@ -307,12 +260,11 @@ is set.
 
 =cut
 
-has default_config => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub default_config {
+    my ($self) = @_;
+    $self->{default_config} ||= $self->_build_default_config();
+    return $self->{default_config};
+}
 sub _build_default_config {
     my ($self) = @_;
     return $self->_merge_configs( $self->default_configs() );
@@ -326,12 +278,11 @@ is the parsed configuration hash for any L</default_stem> configuration.
 
 =cut
 
-has default_configs => (
-    is         => 'ro',
-    isa        => 'ArrayRef[HashRef]',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub default_configs {
+    my ($self) = @_;
+    $self->{default_configs} ||= $self->_build_default_configs();
+    return $self->{default_configs};
+}
 sub _build_default_configs {
     my ($self) = @_;
     return $self->_load_configs( [$self->default_stem()] );
@@ -343,12 +294,11 @@ Like L</default_configs>, but for any L</stems> configurations.
 
 =cut
 
-has stem_configs => (
-    is         => 'ro',
-    isa        => 'ArrayRef[HashRef]',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub stem_configs {
+    my ($self) = @_;
+    $self->{stem_configs} ||= $self->_build_stem_configs();
+    return $self->{stem_configs};
+}
 sub _build_stem_configs {
     my ($self) = @_;
     return $self->_load_configs( $self->stems(), $self->default_config() );
@@ -360,12 +310,11 @@ Like L</default_configs>, but for any L</override_stem> configurations.
 
 =cut
 
-has override_configs => (
-    is         => 'ro',
-    isa        => 'ArrayRef[HashRef]',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub override_configs {
+    my ($self) = @_;
+    $self->{override_configs} ||= $self->_build_override_configs();
+    return $self->{override_configs};
+}
 sub _build_override_configs {
     my ($self) = @_;
     return $self->_load_configs( [$self->override_stem()], $self->default_config() );
@@ -416,12 +365,11 @@ Contains an array of L<Path::Class::File> objects for each value in L</combinati
 
 =cut
 
-has stems => (
-    is         => 'ro',
-    isa        => 'ArrayRef[Path::Class::File]',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub stems {
+    my ($self) = @_;
+    $self->{stems} ||= $self->_build_stems();
+    return $self->{stems};
+}
 sub _build_stems {
     my ($self) = @_;
 
@@ -448,12 +396,11 @@ identity, per the specified L</algorithm>.
 
 =cut
 
-has combinations => (
-    is         => 'ro',
-    isa        => 'ArrayRef[ArrayRef]',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub combinations {
+    my ($self) = @_;
+    $self->{combinations} ||= $self->_build_combinations();
+    return $self->{combinations};
+}
 sub _build_combinations {
     my ($self) = @_;
 
@@ -538,18 +485,16 @@ hashes.
 
 =cut
 
-has merge_object => (
-    is         => 'ro',
-    isa        => 'Hash::Merge',
-    lazy_build => 1,
-    init_arg   => undef,
-);
+sub merge_object {
+    my ($self) = @_;
+    $self->{merge_object} ||= $self->_build_merge_object();
+    return $self->{merge_object};
+}
 sub _build_merge_object {
     my ($self) = @_;
     return Hash::Merge->new( $self->merge_behavior() );
 }
 
-__PACKAGE__->meta->make_immutable;
 1;
 __END__
 
