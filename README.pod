@@ -1,3 +1,5 @@
+=pod
+
 =head1 NAME
 
 Config::Locale - Load and merge locale-specific configuration files.
@@ -172,3 +174,4 @@ Aran Clary Deltac <bluefeet@gmail.com>
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
+=cut
