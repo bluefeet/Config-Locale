@@ -174,7 +174,7 @@ configuration filenames.  Defaults to C<.>.
 
 has separator => (
   is      => 'ro',
-  isa     => NonEmptySimpleStr & StrLength[1,1],
+  isa     => (NonEmptySimpleStr) & (StrLength[1,1]),
   default => '.',
 );
 
