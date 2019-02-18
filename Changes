@@ -2,6 +2,7 @@ Revision history for Perl extension Config-Locale.
 
 {{$NEXT}}
 
+ - Use Moo.
  - Use Path::Tiny instead of Path::Class.
  - Migrate all the tests from Test::More to Test2::V0.
  - Migrate build tooling from Dist::Zilla to Minilla.

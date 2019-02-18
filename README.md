@@ -46,7 +46,7 @@ file will take precedence over the least specific files.  So, in the example abo
 
 ## identity
 
-The identity that configuration files will be loaded for.  In a typical hostname-basedc
+The identity that configuration files will be loaded for.  In a typical hostname-based
 configuration setup this will be the be the parts of the hostname that declare the class,
 number, and cluster that the current host identifies itself as.  But, this could be any
 list of values.
@@ -59,7 +59,7 @@ directory.
 ## wildcard
 
 The wildcard string to use when constructing the configuration filenames.
-Defaults to "all".  This may be explicitly set to undef wich will cause
+Defaults to `all`.  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
 ## default\_stem
@@ -67,9 +67,18 @@ the wildcard string to not be added to the filenames at all.
 A stem used to load default configuration values before any other
 configuration files are loaded.
 
-Defaults to "default".  A relative path may be specified which will be assumed
+Defaults to `default`.  A relative path may be specified which will be assumed
 to be relative to ["directory"](#directory).  If an absolute path is used then no change
 will be made.
+
+Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this stem.
+
+## override\_stem
+
+This works just like ["default\_stem"](#default_stem) except that the configuration values
+from this stem will override those from all other configuration files.
+
+Defaults to `override`.
 
 Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this stem.
 
@@ -78,17 +87,10 @@ Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this st
 If true, then any key that appears in a non-default stem must exist in the
 default stem or an error will be thrown.  Defaults to false.
 
-## override\_stem
-
-This works just like ["default\_stem"](#default_stem) except that the configuration values
-from this stem will override those from all other configuration files.
-
-Defaults to "override".
-
 ## separator
 
 The character that will be used to separate the identity keys in the
-configuration filenames.  Defaults to ".".
+configuration filenames.  Defaults to `.`.
 
 ## prefix
 
@@ -96,7 +98,7 @@ An optional prefix that will be prepended to the configuration filenames.
 
 ## suffix
 
-An optional suffix that will be apended to the configuration filenames.
+An optional suffix that will be appended to the configuration filenames.
 While it may seem like the right place, you probably should not be using
 this to specify the extension of your configuration files.  [Config::Any](https://metacpan.org/pod/Config::Any)
 automatically tries many various forms of extensions without the need
@@ -162,6 +164,10 @@ identity, per the specified ["algorithm"](#algorithm).
 
 The [Hash::Merge](https://metacpan.org/pod/Hash::Merge) object that will be used to merge the configuration
 hashes.
+
+## default\_stem\_path
+
+## override\_stem\_path
 
 # AUTHOR
 

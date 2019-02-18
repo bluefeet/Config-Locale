@@ -48,72 +48,41 @@ file will take precedence over the least specific files.  So, in the example abo
 
 =cut
 
-use strict;
-use warnings;
-
 use Config::Any;
 use Hash::Merge;
 use Algorithm::Loops qw( NestedLoops );
 use Carp qw( croak );
-use Scalar::Util qw( blessed );
 use Path::Tiny;
-use List::MoreUtils qw( any );
+use Types::Standard -types;
+use Types::Common::String -types;
+use Type::Utils -all;
 
-sub new {
-    my $class = shift;
-    croak __PACKAGE__ . '->new() cannot be called on an instance' if blessed $class;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
-    my $args = { @_ };
+my $path_type = declare as Str;
 
-    croak 'The identity argument is required' if !$args->{identity};
-    croak 'The identity argument must be an array ref' if ref($args->{identity}) ne 'ARRAY';
-
-    $args->{directory} ||= '.';
-
-    $args->{wildcard} = 'all' if !exists $args->{wildcard};
-    croak 'The wildcard argument must be a scalar' if ref $args->{wildcard};
-
-    $args->{default_stem} ||= 'default';
-    $args->{default_stem} = '' . path( $args->{default_stem} )->absolute( $args->{directory} );
-
-    $args->{require_defaults} = 0 if !$args->{require_defaults};
-    croak 'The require_defaults argument must be a scalar' if ref $args->{require_defaults};
-
-    $args->{override_stem} ||= 'override';
-    $args->{override_stem} = '' . path( $args->{override_stem} )->absolute( $args->{directory} );
-
-    $args->{separator} ||= '.';
-    croak 'The separator argument must be a scalar' if ref $args->{separator};
-    croak 'The separator argument must be a single character' if length($args->{separator}) != 1;
-
-    $args->{prefix} ||= '';
-    croak 'The prefix argument must be a scalar' if ref $args->{prefix};
-
-    $args->{suffix} ||= '';
-    croak 'The suffix argument must be a scalar' if ref $args->{suffix};
-
-    $args->{algorithm} ||= 'NESTED';
-    croak 'The algorithm argument must be a scalar' if ref $args->{algorithm};
-    croak 'The algorithm argument must be NESTED or PERMUTE' if !any { $args->{algorithm} eq $_ } qw( NESTED PERMUTE );
-
-    $args->{merge_behavior} ||= 'LEFT_PRECEDENT';
-    croak 'The merge_behavior argument must be a scalar' if ref $args->{merge_behavior};
-
-    return bless( $args, $class );
-}
+coerce $path_type,
+  from InstanceOf[ 'Path::Tiny' ],
+  via { '' . $_ };
 
 =head1 ARGUMENTS
 
 =head2 identity
 
-The identity that configuration files will be loaded for.  In a typical hostname-basedc
+The identity that configuration files will be loaded for.  In a typical hostname-based
 configuration setup this will be the be the parts of the hostname that declare the class,
 number, and cluster that the current host identifies itself as.  But, this could be any
 list of values.
 
 =cut
 
-sub identity { $_[0]->{identity} }
+has identity => (
+  is       => 'ro',
+  isa      => ArrayRef[ NonEmptySimpleStr ],
+  requires => 1,
+);
 
 =head2 directory
 
@@ -122,24 +91,33 @@ directory.
 
 =cut
 
-sub directory { $_[0]->{directory} }
+has directory => (
+  is      => 'ro',
+  isa     => $path_type,
+  coerce  => 1,
+  default => '.',
+);
 
 =head2 wildcard
 
 The wildcard string to use when constructing the configuration filenames.
-Defaults to "all".  This may be explicitly set to undef wich will cause
+Defaults to C<all>.  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
 =cut
 
-sub wildcard { return $_[0]->{wildcard} }
+has wildcard => (
+  is      => 'ro',
+  isa     => NonEmptySimpleStr,
+  default => 'all',
+);
 
 =head2 default_stem
 
 A stem used to load default configuration values before any other
 configuration files are loaded.
 
-Defaults to "default".  A relative path may be specified which will be assumed
+Defaults to C<default>.  A relative path may be specified which will be assumed
 to be relative to L</directory>.  If an absolute path is used then no change
 will be made.
 
@@ -147,7 +125,30 @@ Note that L</prefix> and L</suffix> are not applied to this stem.
 
 =cut
 
-sub default_stem { $_[0]->{default_stem} }
+has default_stem => (
+  is      => 'ro',
+  isa     => $path_type,
+  coerce  => 1,
+  default => 'default',
+);
+
+=head2 override_stem
+
+This works just like L</default_stem> except that the configuration values
+from this stem will override those from all other configuration files.
+
+Defaults to C<override>.
+
+Note that L</prefix> and L</suffix> are not applied to this stem.
+
+=cut
+
+has override_stem => (
+  is      => 'ro',
+  isa     => $path_type,
+  coerce  => 1,
+  default => 'override',
+);
 
 =head2 require_defaults
 
@@ -156,27 +157,24 @@ default stem or an error will be thrown.  Defaults to false.
 
 =cut
 
-sub require_defaults { $_[0]->{require_defaults} }
-
-=head2 override_stem
-
-This works just like L</default_stem> except that the configuration values
-from this stem will override those from all other configuration files.
-
-Defaults to "override".
-
-=cut
-
-sub override_stem { $_[0]->{override_stem} }
+has require_defaults => (
+  is      => 'ro',
+  isa     => Bool,
+  default => 0,
+);
 
 =head2 separator
 
 The character that will be used to separate the identity keys in the
-configuration filenames.  Defaults to ".".
+configuration filenames.  Defaults to C<.>.
 
 =cut
 
-sub separator { $_[0]->{separator} }
+has separator => (
+  is      => 'ro',
+  isa     => (NonEmptySimpleStr) & (StrLength[1,1]),
+  default => '.',
+);
 
 =head2 prefix
 
@@ -184,11 +182,15 @@ An optional prefix that will be prepended to the configuration filenames.
 
 =cut
 
-sub prefix { $_[0]->{prefix} }
+has prefix => (
+  is      => 'ro',
+  isa     => SimpleStr,
+  default => '',
+);
 
 =head2 suffix
 
-An optional suffix that will be apended to the configuration filenames.
+An optional suffix that will be appended to the configuration filenames.
 While it may seem like the right place, you probably should not be using
 this to specify the extension of your configuration files.  L<Config::Any>
 automatically tries many various forms of extensions without the need
@@ -196,7 +198,11 @@ to explicitly declare the extension that you are using.
 
 =cut
 
-sub suffix { $_[0]->{suffix} }
+has suffix => (
+  is      => 'ro',
+  isa     => SimpleStr,
+  default => '',
+);
 
 =head2 algorithm
 
@@ -215,7 +221,11 @@ identity and is very fast.
 
 =cut
 
-sub algorithm { $_[0]->{algorithm} }
+has algorithm => (
+  is      => 'ro',
+  isa     => Enum['NESTED', 'PERMUTE'],
+  default => 'NESTED',
+);
 
 =head2 merge_behavior
 
@@ -223,7 +233,11 @@ Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
 
 =cut
 
-sub merge_behavior { $_[0]->{merge_behavior} }
+has merge_behavior => (
+  is      => 'ro',
+  isa     => NonEmptySimpleStr,
+  default => 'LEFT_PRECEDENT',
+);
 
 =head1 ATTRIBUTES
 
@@ -282,7 +296,7 @@ sub default_configs {
 }
 sub _build_default_configs {
     my ($self) = @_;
-    return $self->_load_configs( [$self->default_stem()] );
+    return $self->_load_configs( [$self->default_stem_path()] );
 }
 
 =head2 stem_configs
@@ -314,7 +328,7 @@ sub override_configs {
 }
 sub _build_override_configs {
     my ($self) = @_;
-    return $self->_load_configs( [$self->override_stem()], $self->default_config() );
+    return $self->_load_configs( [$self->override_stem_path()], $self->default_config() );
 }
 
 sub _merge_configs {
@@ -370,7 +384,7 @@ sub stems {
 sub _build_stems {
     my ($self) = @_;
 
-    my $directory = $self->directory();
+    my $directory = path( $self->directory() );
     my $separator = $self->separator();
     my $prefix    = $self->prefix();
     my $suffix    = $self->suffix();
@@ -482,14 +496,39 @@ hashes.
 
 =cut
 
-sub merge_object {
-    my ($self) = @_;
-    $self->{merge_object} ||= $self->_build_merge_object();
-    return $self->{merge_object};
-}
+has merge_object => (
+  is       => 'lazy',
+  init_arg => undef,
+);
 sub _build_merge_object {
     my ($self) = @_;
     return Hash::Merge->new( $self->merge_behavior() );
+}
+
+=head2 default_stem_path
+
+=cut
+
+has default_stem_path => (
+  is       => 'lazy',
+  init_arg => undef,
+);
+sub _build_default_stem_path {
+  my ($self) = @_;
+  return '' . path( $self->default_stem() )->absolute( $self->directory );
+}
+
+=head2 override_stem_path
+
+=cut
+
+has override_stem_path => (
+  is       => 'lazy',
+  init_arg => undef,
+);
+sub _build_override_stem_path {
+  my ($self) = @_;
+  return '' . path( $self->override_stem() )->absolute( $self->directory );
 }
 
 1;

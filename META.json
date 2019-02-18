@@ -46,9 +46,9 @@
             "Carp" : "0",
             "Config::Any" : "0.04",
             "Hash::Merge" : "0.12",
-            "List::MoreUtils" : "0.428",
+            "Moo" : "2.000000",
             "Path::Tiny" : "0.091",
-            "Scalar::Util" : "0"
+            "Type::Tiny" : "1.004000"
          }
       },
       "test" : {
