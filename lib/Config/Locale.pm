@@ -56,7 +56,7 @@ use Hash::Merge;
 use Algorithm::Loops qw( NestedLoops );
 use Carp qw( croak );
 use Scalar::Util qw( blessed );
-use Path::Class qw( dir file );
+use Path::Tiny;
 use List::MoreUtils qw( any );
 
 sub new {
@@ -69,24 +69,18 @@ sub new {
     croak 'The identity argument must be an array ref' if ref($args->{identity}) ne 'ARRAY';
 
     $args->{directory} ||= '.';
-    $args->{directory} = dir( $args->{directory} ) if !blessed $args->{directory};
-    croak 'The directory argument must be a Path::Class::Dir object' if ref($args->{directory}) ne 'Path::Class::Dir';
 
     $args->{wildcard} = 'all' if !exists $args->{wildcard};
     croak 'The wildcard argument must be a scalar' if ref $args->{wildcard};
 
     $args->{default_stem} ||= 'default';
-    $args->{default_stem} = file( $args->{default_stem} ) if !blessed $args->{default_stem};
-    croak 'The default_stem argument must be a Path::Class::File object' if ref($args->{default_stem}) ne 'Path::Class::File';
-    $args->{default_stem} = $args->{default_stem}->absolute( $args->{directory} );
+    $args->{default_stem} = '' . path( $args->{default_stem} )->absolute( $args->{directory} );
 
     $args->{require_defaults} = 0 if !$args->{require_defaults};
     croak 'The require_defaults argument must be a scalar' if ref $args->{require_defaults};
 
     $args->{override_stem} ||= 'override';
-    $args->{override_stem} = file( $args->{override_stem} ) if !blessed $args->{override_stem};
-    croak 'The override_stem argument must be a Path::Class::File object' if ref($args->{override_stem}) ne 'Path::Class::File';
-    $args->{override_stem} = $args->{override_stem}->absolute( $args->{directory} );
+    $args->{override_stem} = '' . path( $args->{override_stem} )->absolute( $args->{directory} );
 
     $args->{separator} ||= '.';
     croak 'The separator argument must be a scalar' if ref $args->{separator};
@@ -147,7 +141,7 @@ configuration files are loaded.
 
 Defaults to "default".  A relative path may be specified which will be assumed
 to be relative to L</directory>.  If an absolute path is used then no change
-will be made.  Either a scalar or a L<Path::Class::File> object may be used.
+will be made.
 
 Note that L</prefix> and L</suffix> are not applied to this stem.
 
@@ -364,7 +358,7 @@ sub _load_configs {
 
 =head2 stems
 
-Contains an array of L<Path::Class::File> objects for each value in L</combinations>.
+Contains an array of file paths for each value in L</combinations>.
 
 =cut
 
@@ -386,7 +380,7 @@ sub _build_stems {
     my @stems;
     foreach my $combination (@combinations) {
         my @parts = @$combination;
-        push @stems, $directory->file( $prefix . join($separator, @parts) . $suffix );
+        push @stems, '' . $directory->child( $prefix . join($separator, @parts) . $suffix );
     }
 
     return \@stems;
@@ -458,8 +452,8 @@ sub _permute_combinations {
     $id_lookup->{$wildcard} = 1 if defined $wildcard;
 
     my @combos;
-    foreach my $file ($self->directory->children()) {
-        next if $file->is_dir();
+    foreach my $file (path( $self->directory() )->children()) {
+        next if -d $file;
 
         if ($file->basename() =~ m{^$prefix(.*)$suffix\.}) {
             my @parts = split(/[$separator]/, $1);

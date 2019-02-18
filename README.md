@@ -69,7 +69,7 @@ configuration files are loaded.
 
 Defaults to "default".  A relative path may be specified which will be assumed
 to be relative to ["directory"](#directory).  If an absolute path is used then no change
-will be made.  Either a scalar or a [Path::Class::File](https://metacpan.org/pod/Path::Class::File) object may be used.
+will be made.
 
 Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this stem.
 
@@ -151,7 +151,7 @@ Like ["default\_configs"](#default_configs), but for any ["override\_stem"](#ove
 
 ## stems
 
-Contains an array of [Path::Class::File](https://metacpan.org/pod/Path::Class::File) objects for each value in ["combinations"](#combinations).
+Contains an array of file paths for each value in ["combinations"](#combinations).
 
 ## combinations
 
