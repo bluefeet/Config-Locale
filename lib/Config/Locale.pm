@@ -1,6 +1,6 @@
 package Config::Locale;
-use strict;
-use warnings;
+
+$Config::Locale::VERSION = '0.05';
 
 =head1 NAME
 
@@ -47,6 +47,9 @@ file will take precedence over the least specific files.  So, in the example abo
 "db.1.qa" values will overwrite values from "db.1.all".
 
 =cut
+
+use strict;
+use warnings;
 
 use Config::Any;
 use Hash::Merge;

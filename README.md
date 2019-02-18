@@ -1,10 +1,8 @@
-=pod
-
-=head1 NAME
+# NAME
 
 Config::Locale - Load and merge locale-specific configuration files.
 
-=head1 SYNOPSIS
+# SYNOPSIS
 
     use Config::Locale;
     
@@ -15,11 +13,11 @@ Config::Locale - Load and merge locale-specific configuration files.
     
     my $config = $locale->config();
 
-=head1 DESCRIPTION
+# DESCRIPTION
 
 This module takes an identity array, determines the permutations of the identity using
-L<Algorithm::Loops>, loads configuration files using L<Config::Any>, and finally combines
-the configurations using L<Hash::Merge>.
+[Algorithm::Loops](https://metacpan.org/pod/Algorithm::Loops), loads configuration files using [Config::Any](https://metacpan.org/pod/Config::Any), and finally combines
+the configurations using [Hash::Merge](https://metacpan.org/pod/Hash::Merge).
 
 So, given this setup:
 
@@ -44,134 +42,132 @@ final configuration hash.  The hashes will be merged so that the most specific c
 file will take precedence over the least specific files.  So, in the example above,
 "db.1.qa" values will overwrite values from "db.1.all".
 
-=head1 ARGUMENTS
+# ARGUMENTS
 
-=head2 identity
+## identity
 
 The identity that configuration files will be loaded for.  In a typical hostname-basedc
 configuration setup this will be the be the parts of the hostname that declare the class,
 number, and cluster that the current host identifies itself as.  But, this could be any
 list of values.
 
-=head2 directory
+## directory
 
 The directory to load configuration files from.  Defaults to the current
 directory.
 
-=head2 wildcard
+## wildcard
 
 The wildcard string to use when constructing the configuration filenames.
 Defaults to "all".  This may be explicitly set to undef wich will cause
 the wildcard string to not be added to the filenames at all.
 
-=head2 default_stem
+## default\_stem
 
 A stem used to load default configuration values before any other
 configuration files are loaded.
 
 Defaults to "default".  A relative path may be specified which will be assumed
-to be relative to L</directory>.  If an absolute path is used then no change
-will be made.  Either a scalar or a L<Path::Class::File> object may be used.
+to be relative to ["directory"](#directory).  If an absolute path is used then no change
+will be made.  Either a scalar or a [Path::Class::File](https://metacpan.org/pod/Path::Class::File) object may be used.
 
-Note that L</prefix> and L</suffix> are not applied to this stem.
+Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this stem.
 
-=head2 require_defaults
+## require\_defaults
 
 If true, then any key that appears in a non-default stem must exist in the
 default stem or an error will be thrown.  Defaults to false.
 
-=head2 override_stem
+## override\_stem
 
-This works just like L</default_stem> except that the configuration values
+This works just like ["default\_stem"](#default_stem) except that the configuration values
 from this stem will override those from all other configuration files.
 
 Defaults to "override".
 
-=head2 separator
+## separator
 
 The character that will be used to separate the identity keys in the
 configuration filenames.  Defaults to ".".
 
-=head2 prefix
+## prefix
 
 An optional prefix that will be prepended to the configuration filenames.
 
-=head2 suffix
+## suffix
 
 An optional suffix that will be apended to the configuration filenames.
 While it may seem like the right place, you probably should not be using
-this to specify the extension of your configuration files.  L<Config::Any>
+this to specify the extension of your configuration files.  [Config::Any](https://metacpan.org/pod/Config::Any)
 automatically tries many various forms of extensions without the need
 to explicitly declare the extension that you are using.
 
-=head2 algorithm
+## algorithm
 
 Which algorithm used to determine, based on the identity, what configuration
 files to consider for inclusion.
 
-The default, C<NESTED>, keeps the order of the identity.  This is most useful
+The default, `NESTED`, keeps the order of the identity.  This is most useful
 for identities that are derived from the name of a resource as resource names
 (such as hostnames of machines) typically have a defined structure.
 
-C<PERMUTE> finds configuration files that includes any number of the identity
+`PERMUTE` finds configuration files that includes any number of the identity
 values in any order.  Due to the high CPU demands of permutation algorithms this does
 not actually generate every possible permutation - instead it finds all files that
 match the directory/prefix/separator/suffix and filters those for values in the
 identity and is very fast.
 
-=head2 merge_behavior
+## merge\_behavior
 
-Specify a L<Hash::Merge> merge behavior.  The default is C<LEFT_PRECEDENT>.
+Specify a [Hash::Merge](https://metacpan.org/pod/Hash::Merge) merge behavior.  The default is `LEFT_PRECEDENT`.
 
-=head1 ATTRIBUTES
+# ATTRIBUTES
 
-=head2 config
+## config
 
-Contains the final configuration hash as merged from the hashes in L</default_config>,
-L</stem_configs>, and L</override_configs>.
+Contains the final configuration hash as merged from the hashes in ["default\_config"](#default_config),
+["stem\_configs"](#stem_configs), and ["override\_configs"](#override_configs).
 
-=head2 default_config
+## default\_config
 
-A merged hash of all the hashrefs in L</default_configs>.  This is computed
-separately, but then merged with, L</config> so that the L</stem_configs> and
-L</override_configs> can be checked for valid keys if L</require_defaults>
+A merged hash of all the hashrefs in ["default\_configs"](#default_configs).  This is computed
+separately, but then merged with, ["config"](#config) so that the ["stem\_configs"](#stem_configs) and
+["override\_configs"](#override_configs) can be checked for valid keys if ["require\_defaults"](#require_defaults)
 is set.
 
-=head2 default_configs
+## default\_configs
 
 An array of hashrefs, each hashref containing a single key/value pair as returned
-by L<Config::Any>->load_stems() where the key is the filename found, and the value
-is the parsed configuration hash for any L</default_stem> configuration.
+by [Config::Any](https://metacpan.org/pod/Config::Any)->load\_stems() where the key is the filename found, and the value
+is the parsed configuration hash for any ["default\_stem"](#default_stem) configuration.
 
-=head2 stem_configs
+## stem\_configs
 
-Like L</default_configs>, but for any L</stems> configurations.
+Like ["default\_configs"](#default_configs), but for any ["stems"](#stems) configurations.
 
-=head2 override_configs
+## override\_configs
 
-Like L</default_configs>, but for any L</override_stem> configurations.
+Like ["default\_configs"](#default_configs), but for any ["override\_stem"](#override_stem) configurations.
 
-=head2 stems
+## stems
 
-Contains an array of L<Path::Class::File> objects for each value in L</combinations>.
+Contains an array of [Path::Class::File](https://metacpan.org/pod/Path::Class::File) objects for each value in ["combinations"](#combinations).
 
-=head2 combinations
+## combinations
 
 Holds an array of arrays containing all possible permutations of the
-identity, per the specified L</algorithm>.
+identity, per the specified ["algorithm"](#algorithm).
 
-=head2 merge_object
+## merge\_object
 
-The L<Hash::Merge> object that will be used to merge the configuration
+The [Hash::Merge](https://metacpan.org/pod/Hash::Merge) object that will be used to merge the configuration
 hashes.
 
-=head1 AUTHOR
+# AUTHOR
 
 Aran Clary Deltac <bluefeet@gmail.com>
 
-=head1 LICENSE
+# LICENSE
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
-
-=cut
