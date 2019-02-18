@@ -1,4 +1,6 @@
 requires 'Moo' => '2.000000';
+requires 'strictures' => '2.000000';
+requires 'namespace::clean' => '0.24';
 requires 'Config::Any' => 0.04;
 requires 'Hash::Merge' => 0.12;
 requires 'Algorithm::Loops' => 1.031;

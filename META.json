@@ -48,7 +48,9 @@
             "Hash::Merge" : "0.12",
             "Moo" : "2.000000",
             "Path::Tiny" : "0.091",
-            "Type::Tiny" : "1.004000"
+            "Type::Tiny" : "1.004000",
+            "namespace::clean" : "0.24",
+            "strictures" : "2.000000"
          }
       },
       "test" : {
