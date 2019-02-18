@@ -25,7 +25,7 @@ So, given this setup:
         identity => ['db', '1', 'qa'],
     );
 
-The following configuration files will be looked for (listed from least specific to most):
+The following configuration stems will be looked for (listed from least specific to most):
 
     default
     all.all.qa
@@ -41,6 +41,8 @@ For each file found the contents will be parsed and then merged together to prod
 final configuration hash.  The hashes will be merged so that the most specific configuration
 file will take precedence over the least specific files.  So, in the example above,
 "db.1.qa" values will overwrite values from "db.1.all".
+
+The term `stem` comes from [Config::Any](https://metacpan.org/pod/Config::Any), and means a filename without an extension.
 
 # ARGUMENTS
 
@@ -64,8 +66,7 @@ the wildcard string to not be added to the filenames at all.
 
 ## default\_stem
 
-A stem used to load default configuration values before any other
-configuration files are loaded.
+A stem to load first, before all other stems.
 
 Defaults to `default`.  A relative path may be specified which will be assumed
 to be relative to ["directory"](#directory).  If an absolute path is used then no change
@@ -75,10 +76,11 @@ Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this st
 
 ## override\_stem
 
-This works just like ["default\_stem"](#default_stem) except that the configuration values
-from this stem will override those from all other configuration files.
+A stem to load last, after all other stems.
 
-Defaults to `override`.
+Defaults to `override`.  A relative path may be specified which will be assumed
+to be relative to ["directory"](#directory).  If an absolute path is used then no change
+will be made.
 
 Note that ["prefix"](#prefix) and ["suffix"](#suffix) are not applied to this stem.
 
