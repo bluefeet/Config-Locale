@@ -2,6 +2,8 @@ Revision history for Perl extension Config-Locale.
 
 {{$NEXT}}
 
+0.06 2019-02-18T06:25:22Z
+
  - Some documentation updates.
  - Use Moo.
  - Use Path::Tiny instead of Path::Class.
