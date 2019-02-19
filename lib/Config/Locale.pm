@@ -69,6 +69,14 @@ coerce $path_type,
   from InstanceOf[ 'Path::Tiny' ],
   via { '' . $_ };
 
+coerce $path_type,
+  from InstanceOf[ 'Path::Class::File' ],
+  via { '' . $_ };
+
+coerce $path_type,
+  from InstanceOf[ 'Path::Class::Dir' ],
+  via { '' . $_ };
+
 =head1 ARGUMENTS
 
 =head2 identity
