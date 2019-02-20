@@ -1,5 +1,6 @@
 package Config::Locale;
-
+BEGIN { $ENV{PERL_STRICTURES_EXTRA}=0 }
+use strictures 2;
 our $VERSION = '0.07';
 
 =head1 NAME
@@ -60,7 +61,6 @@ use Types::Common::String -types;
 use Type::Utils -all;
 
 use Moo;
-use strictures 2;
 use namespace::clean;
 
 my $path_type = declare as Str;
