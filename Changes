@@ -2,6 +2,7 @@ Revision history for Perl extension Config-Locale.
 
 {{$NEXT}}
 
+ - Really fix tests on Windows.
  - Fix a strictures/multidimensional issue on 5.8.
 
 0.07 2019-02-19T14:14:42Z
