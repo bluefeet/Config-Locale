@@ -1,7 +1,7 @@
 package Config::Locale;
 BEGIN { $ENV{PERL_STRICTURES_EXTRA}=0 }
 use strictures 2;
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 NAME
 
