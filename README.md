@@ -4,14 +4,16 @@ Config::Locale - Load and merge locale-specific configuration files.
 
 # SYNOPSIS
 
-    use Config::Locale;
-    
-    my $locale = Config::Locale->new(
-        identity => \@values,
-        directory => $config_dir,
-    );
-    
-    my $config = $locale->config();
+```perl
+use Config::Locale;
+
+my $locale = Config::Locale->new(
+    identity => \@values,
+    directory => $config_dir,
+);
+
+my $config = $locale->config();
+```
 
 # DESCRIPTION
 
@@ -21,21 +23,25 @@ the configurations using [Hash::Merge](https://metacpan.org/pod/Hash::Merge).
 
 So, given this setup:
 
-    Config::Locale->new(
-        identity => ['db', '1', 'qa'],
-    );
+```perl
+Config::Locale->new(
+    identity => ['db', '1', 'qa'],
+);
+```
 
 The following configuration stems will be looked for (listed from least specific to most):
 
-    default
-    all.all.qa
-    all.1.all
-    all.1.qa
-    db.all.all
-    db.all.qa
-    db.1.all
-    db.1.qa
-    override
+```
+default
+all.all.qa
+all.1.all
+all.1.qa
+db.all.all
+db.all.qa
+db.1.all
+db.1.qa
+override
+```
 
 For each file found the contents will be parsed and then merged together to produce the
 final configuration hash.  The hashes will be merged so that the most specific configuration
@@ -167,11 +173,20 @@ identity, per the specified ["algorithm"](#algorithm).
 The [Hash::Merge](https://metacpan.org/pod/Hash::Merge) object that will be used to merge the configuration
 hashes.
 
-# AUTHOR
+# SUPPORT
 
+Please submit bugs and feature requests to the
+Config-Locale GitHub issue tracker:
+
+[https://github.com/bluefeet/Config-Locale/issues](https://github.com/bluefeet/Config-Locale/issues)
+
+# AUTHORS
+
+```
 Aran Clary Deltac <bluefeet@gmail.com>
+```
 
 # LICENSE
 
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

@@ -4,6 +4,8 @@ use strict;
 use warnings;
 our $VERSION = '0.09';
 
+=encoding utf8
+
 =head1 NAME
 
 Config::Locale - Load and merge locale-specific configuration files.
@@ -539,12 +541,21 @@ sub _build__override_stem_path {
 1;
 __END__
 
-=head1 AUTHOR
+=head1 SUPPORT
 
-Aran Clary Deltac <bluefeet@gmail.com>
+Please submit bugs and feature requests to the
+Config-Locale GitHub issue tracker:
+
+L<https://github.com/bluefeet/Config-Locale/issues>
+
+=head1 AUTHORS
+
+    Aran Clary Deltac <bluefeet@gmail.com>
 
 =head1 LICENSE
 
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
 
