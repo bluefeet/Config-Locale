@@ -18,8 +18,8 @@ my $config = $locale->config();
 # DESCRIPTION
 
 This module takes an identity array, determines the permutations of the identity using
-[Algorithm::Loops](https://metacpan.org/pod/Algorithm::Loops), loads configuration files using [Config::Any](https://metacpan.org/pod/Config::Any), and finally combines
-the configurations using [Hash::Merge](https://metacpan.org/pod/Hash::Merge).
+[Algorithm::Loops](https://metacpan.org/pod/Algorithm%3A%3ALoops), loads configuration files using [Config::Any](https://metacpan.org/pod/Config%3A%3AAny), and finally combines
+the configurations using [Hash::Merge](https://metacpan.org/pod/Hash%3A%3AMerge).
 
 So, given this setup:
 
@@ -48,7 +48,7 @@ final configuration hash.  The hashes will be merged so that the most specific c
 file will take precedence over the least specific files.  So, in the example above,
 "db.1.qa" values will overwrite values from "db.1.all".
 
-The term `stem` comes from [Config::Any](https://metacpan.org/pod/Config::Any), and means a filename without an extension.
+The term `stem` comes from [Config::Any](https://metacpan.org/pod/Config%3A%3AAny), and means a filename without an extension.
 
 # ARGUMENTS
 
@@ -108,7 +108,7 @@ An optional prefix that will be prepended to the configuration filenames.
 
 An optional suffix that will be appended to the configuration filenames.
 While it may seem like the right place, you probably should not be using
-this to specify the extension of your configuration files.  [Config::Any](https://metacpan.org/pod/Config::Any)
+this to specify the extension of your configuration files.  [Config::Any](https://metacpan.org/pod/Config%3A%3AAny)
 automatically tries many various forms of extensions without the need
 to explicitly declare the extension that you are using.
 
@@ -129,7 +129,7 @@ identity and is very fast.
 
 ## merge\_behavior
 
-Specify a [Hash::Merge](https://metacpan.org/pod/Hash::Merge) merge behavior.  The default is `LEFT_PRECEDENT`.
+Specify a [Hash::Merge](https://metacpan.org/pod/Hash%3A%3AMerge) merge behavior.  The default is `LEFT_PRECEDENT`.
 
 # ATTRIBUTES
 
@@ -148,7 +148,7 @@ is set.
 ## default\_configs
 
 An array of hashrefs, each hashref containing a single key/value pair as returned
-by [Config::Any](https://metacpan.org/pod/Config::Any)->load\_stems() where the key is the filename found, and the value
+by [Config::Any](https://metacpan.org/pod/Config%3A%3AAny)->load\_stems() where the key is the filename found, and the value
 is the parsed configuration hash for any ["default\_stem"](#default_stem) configuration.
 
 ## stem\_configs
@@ -170,7 +170,7 @@ identity, per the specified ["algorithm"](#algorithm).
 
 ## merge\_object
 
-The [Hash::Merge](https://metacpan.org/pod/Hash::Merge) object that will be used to merge the configuration
+The [Hash::Merge](https://metacpan.org/pod/Hash%3A%3AMerge) object that will be used to merge the configuration
 hashes.
 
 # SUPPORT
